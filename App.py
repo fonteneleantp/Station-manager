@@ -1,3 +1,6 @@
+#Antonio Pereira Fontenele
+#OperationaRecord
+
 import customtkinter as ctk
 from tkinter import END
 from PIL import Image, ImageTk
