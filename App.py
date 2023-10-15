@@ -1,6 +1,7 @@
 #Antonio Pereira Fontenele
 #OperationalRecord
 
+from sys import getwindowsversion
 import customtkinter as ctk
 from tkinter import END
 from PIL import Image, ImageTk
@@ -83,7 +84,7 @@ class BackEnd():
         except:
             messagebox.showerror(title="OperationalRecord", message="Usuário não encontrado!\nVerifique os seus dados")
             self.desconecta_db()
-    def minimizador(self):
+    """def minimizador(self):
         self.posto_habilitado = posto_habilitado
         while not self.posto_habilitado:
             for j in gw.getAllTitles():
@@ -93,8 +94,22 @@ class BackEnd():
                         if window.isMaximized:
                             window.minimize()
                     except IndexError:
-                        pass
+                        pass"""
             #   sleep(1)
+
+    def minimizador(self):
+        self.posto_habilitado = posto_habilitado
+        while not self.posto_habilitado:
+            for j in gw.getAllTitles():
+                if j != "OperationalRecord":
+                    try:
+                        windows = gw.getWindowsWithTitle(j)
+                        if windows:
+                            window = windows[0]
+                            if window.isMaximized:
+                                window.minimize()
+                    except Exception as e:
+                        pass
     """def minimizador(self):
         self.posto_habilitado = posto_habilitado
 
@@ -106,7 +121,14 @@ class BackEnd():
                     if not j.isMinimized:
                         j.minimize()
         sleep(1)"""
+    def desconecta_usuario(self):
+                # Atualize o estado do usuário para desconectado
+        self.usuario_conectado = False
 
+        self.posto_habilitado = False
+        messagebox.showinfo(title="OperationalRecord", message=f"Usuário de matrícula {self.matricula_login} desconectado!")
+
+        self.minimizador()
 class App(ctk.CTk, BackEnd):
     def __init__(self):
         super().__init__()
@@ -117,20 +139,26 @@ class App(ctk.CTk, BackEnd):
         minimizador_thread.start()
     def configuracoes_da_janela(self):
         #Configurando a janela principal
-        self.geometry("700x400")
+        #self.geometry("700x400")
+        self.attributes("-fullscreen", True)
+        #-alpha, -transparentcolor, -disabled, -fullscreen, -toolwindow, or -topmost
         self.title("OperationalRecord")
         self.resizable(True, True)
         ctk.set_appearance_mode("Dark")
     def tela_de_login(self):
+
+        #Criando aS FrameS
+        self.frame_centro = ctk.CTkLabel(self,text=None, width = 700, height=400, fg_color="#1e1e1e", corner_radius=8)
+        self.frame_centro.place(x=451, y=250) 
+        self.frame_login = ctk.CTkLabel(self,text=None, width = 330, height=380, fg_color="#323232", corner_radius=8)
+        self.frame_login.place(x=810, y=260)
+        #self.frame_login.place(x=360, y=10)
         #Trabalhando com as imagens
         img = Image.open("Team.png")
         img_resize = img.resize((380, 380))
         img_resize_tk = ImageTk.PhotoImage(img_resize)
-        self.lb_img = ctk.CTkLabel(self, text=None, image=img_resize_tk)
+        self.lb_img = ctk.CTkLabel(self.frame_centro, text=None, image=img_resize_tk)
         self.lb_img.place(x=0, y=10)
-        #Criando a Frame
-        self.frame_login = ctk.CTkLabel(self,text=None, width = 330, height=380, fg_color="#323232", corner_radius=8)
-        self.frame_login.place(x=360, y=10)
         #Widgets da frame_login
         self.lb_title_login = ctk.CTkLabel(self.frame_login, text="Faça login para habilitar o posto", font=("Century Gothic bold", 14))
         self.lb_title_login.place(x=65, y=20)
@@ -142,16 +170,18 @@ class App(ctk.CTk, BackEnd):
         self.save_mat_entry.place(x=15, y=120) 
         self.bt_iniciar = ctk.CTkButton(self.frame_login, text="INICIAR!", width=300, hover_color="#87bdfd", command=self.verifica_login)
         self.bt_iniciar.place(x=15, y=170)
+        self.bt_iniciar = ctk.CTkButton(self.frame_login, text="DESCONECTAR", width=300,fg_color= "red", hover_color="#87bdfd", command=self.desconecta_usuario)
+        self.bt_iniciar.place(x=15, y=205)
         self.lb_registro_login = ctk.CTkLabel(self.frame_login, text="Novo usuário:", font=("Century Gothic bold", 15))
-        self.lb_registro_login.place(x=15, y=205) 
+        self.lb_registro_login.place(x=15, y=240) 
         self.bt_registro_login = ctk.CTkButton(self.frame_login, text="REGISTRAR", width=205, fg_color="green", hover_color="#090", command=self.tela_de_registro)
-        self.bt_registro_login.place(x=110, y=205)     
+        self.bt_registro_login.place(x=110, y=240)     
     def tela_de_registro(self):
         #Remover frame de login
         self.frame_login.place_forget()
         #Criar frame de registro
         self.frame_registro = ctk.CTkLabel(self,text=None, width = 330, height=380, fg_color="#323232", corner_radius=8)
-        self.frame_registro.place(x=360, y=10)      
+        self.frame_registro.place(x=810, y=260)      
         #Widgets da tela de registro
         self.lb_title_registro = ctk.CTkLabel(self.frame_registro, text="Registre um novo usuário", font=("Century Gothic bold", 14))
         self.lb_title_registro.place(x=85, y=20)
@@ -176,6 +206,10 @@ class App(ctk.CTk, BackEnd):
         self.csenha_registro_entry.delete(0, END)  
     def limpa_entry_login(self):
         self.senha_login_entry.delete(0, END)
+
+if __name__=="__main__":
+    app = App()
+    app.mainloop()
 
 if __name__=="__main__":
     app = App()
