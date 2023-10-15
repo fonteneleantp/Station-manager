@@ -1,5 +1,5 @@
 #Antonio Pereira Fontenele
-#OperationaRecord
+#OperationalRecord
 
 import customtkinter as ctk
 from tkinter import END
@@ -83,30 +83,29 @@ class BackEnd():
         except:
             messagebox.showerror(title="OperationalRecord", message="Usuário não encontrado!\nVerifique os seus dados")
             self.desconecta_db()
-    """def minimizador(self):
-        global posto_habilitado  # Você precisa usar a variável global para modificá-la
-
-        while True:
-            if not posto_habilitado:
-                for j in gw.getAllTitles():
-                    if j != nome_aplicativo_especifico:
-                        try:
-                            window = gw.getWindowsWithTitle(j)[0]
-                            if window.isActive:
-                                if window.title != "Barra de Tarefas":
-                                    window.minimize()
-                        except IndexError:
-                            pass
-            sleep(1)"""
     def minimizador(self):
         self.posto_habilitado = posto_habilitado
+        while not self.posto_habilitado:
+            for j in gw.getAllTitles():
+                if j != "OperationalRecord":
+                    try:
+                        window = gw.getWindowsWithTitle(j)[0]
+                        if window.isMaximized:
+                            window.minimize()
+                    except IndexError:
+                        pass
+            #   sleep(1)
+    """def minimizador(self):
+        self.posto_habilitado = posto_habilitado
 
-        while (self.posto_habilitado == False):
+        while not self.posto_habilitado:
             for janela in gw.getAllTitles():
-                if janela != "OperationalRecord" and "Barra de Tarefas" not in janela:
+                if janela != "OperationalRecord": #and "Barra de Tarefas" not in janela:
                     j = gw.getWindowsWithTitle(janela)[0]
-                    j.minimize()
-            #sleep(0.1)
+                    # Verifique se a janela não está minimizada antes de minimizá-la
+                    if not j.isMinimized:
+                        j.minimize()
+        sleep(1)"""
 
 class App(ctk.CTk, BackEnd):
     def __init__(self):
@@ -120,7 +119,7 @@ class App(ctk.CTk, BackEnd):
         #Configurando a janela principal
         self.geometry("700x400")
         self.title("OperationalRecord")
-        self.resizable(False, False)
+        self.resizable(True, True)
         ctk.set_appearance_mode("Dark")
     def tela_de_login(self):
         #Trabalhando com as imagens
