@@ -1,5 +1,6 @@
+
 #Antonio Pereira Fontenele
-#OperationalRecord
+#Station Manager
 
 from sys import getwindowsversion
 import customtkinter as ctk
@@ -10,9 +11,11 @@ import sqlite3
 from tkinter import messagebox
 import pygetwindow as gw
 import threading
+import os
+import datetime
 
 posto_habilitado = False
-
+log_file_name = "Station Manager Log"
 
 class BackEnd():
     def conecta_db(self):
@@ -28,7 +31,7 @@ class BackEnd():
             CREATE TABLE IF NOT EXISTS Usuarios(
                 Id INTEGER PRIMARY KEY AUTOINCREMENT,
                 Nome TEXT NOT NULL,
-                Matrícula TEXT NOT NULL,
+                MatrÃ­cula TEXT NOT NULL,
                 Senha TEXT NOT NULL,
                 CSenha TEXT NOT NULL
             );
@@ -41,100 +44,124 @@ class BackEnd():
         self.matricula_registro = self.matricula_registro_entry.get()
         self.senha_registro = self.senha_registro_entry.get()
         self.csenha_registro = self.csenha_registro_entry.get()
-
         self.conecta_db()
         self.cursor.execute("""
-            INSERT INTO Usuarios (Nome, Matrícula, Senha, CSenha)
+            INSERT INTO Usuarios (Nome, MatrÃ­cula, Senha, CSenha)
             VALUES (?, ?, ?, ?)
         """, (self.nome_registro, self.matricula_registro, self.senha_registro, self.csenha_registro))
-
         try:
-            if (self.nome_registro=="" or self.matricula_registro=="" or self.senha_registro=="" or self.csenha_registro==""):
-                messagebox.showerror(title="OperationalRecord", message="Por favor preencher todos os campos")
+            if (len(self.nome_registro)==0 or len(self.matricula_registro)==0 or len(self.senha_registro)==0 or len(self.csenha_registro)==0):
+                messagebox.showerror(title="Station Manager", message="Por favor preencher todos os campos")
             elif(len(self.nome_registro) < 10):
-                messagebox.showwarning(title="OperationalRecord", message="Favor digite seu nome completo")
-            elif(len(self.senha_registro) < 8):
-                messagebox.showwarning(title="OperationalRecord", message="Sua senha deve possuir no mínimo 9 dígitos")
+                messagebox.showwarning(title="Station Manager", message="Favor digite seu nome completo")
+            elif(len(self.senha_registro) < 8 or len(self.senha_registro) > 8):
+                messagebox.showwarning(title="Station Manager", message="Sua senha deve possuir exatos 8 dÃ­gitos")
             elif(self.senha_registro != self.csenha_registro):
-                messagebox.showerror(title="OperationalRecord", message="As senhas digitadas devem ser idênticas")
+                messagebox.showerror(title="Station Manager", message="As senhas digitadas devem ser idÃªnticas")
             else:
                 self.conn.commit()
-                messagebox.showinfo(title="OperationalRecord", message="Novo usuário cadastrado com sucesso")
+                self.tela_de_login()
+                messagebox.showinfo(title="Station Manager", message=f"Novo usuÃ¡rio cadastrado com sucesso, usuÃ¡rio de matrÃ­cula {self.matricula_registro} Habilitado para atuar neste posto")
         except:
-            messagebox.showerror(title="OperationalRecord", message="Erro no processamento do seu cadastro\n Por favor tente novamente")
+            messagebox.showerror(title="Station Manager", message="Erro no processamento do seu cadastro\n Por favor tente novamente")
     def verifica_login(self):
         self.matricula_login = self.matricula_login_entry.get()
         self.senha_login = self.senha_login_entry.get()
         #self.limpa_entry_login()
-
         self.conecta_db()
-
-        self.cursor.execute("""SELECT * FROM Usuarios WHERE (Matrícula = ? AND Senha = ?)""", (self.matricula_login, self.senha_login))
-
+        self.cursor.execute("""SELECT * FROM Usuarios WHERE (MatrÃ­cula = ? AND Senha = ?)""", (self.matricula_login, self.senha_login))
         self.verifica_dados = self.cursor.fetchone() #Percorrendo na tabela Usuarios
         try:
             if(self.matricula_login=="" or self.senha_login==""):
-                messagebox.showwarning(title="OperationalRecord", message="Por favor preencher todos os campos")
+                messagebox.showwarning(title="Station Manager", message="Por favor preencher todos os campos")
             elif(self.matricula_login in self.verifica_dados and self.senha_login in self.verifica_dados):
                 self.limpa_entry_login()
                 self.posto_habilitado = True
-                messagebox.showinfo(title="OperationalRecord", message=f"Posto habilitado! Usuário de matrícula {self.matricula_login} operando o posto")
+                #Registrando Log de entrada
+                self.agora = datetime.datetime.now()
+                self.data_hora = self.agora.strftime("%H:%M â€“ %d/%m/%Y")
+                with open(log_file_name, 'a') as log_file:
+                    log_file.write(f"MACHINE, {self.data_hora}: UsuÃ¡rio de matrÃ­cula {self.matricula_login} fez login.\n")
+                #Finalizando Log
+                messagebox.showinfo(title="Station Manager", message=f"Posto habilitado! UsuÃ¡rio de matrÃ­cula {self.matricula_login} operando o posto")
                 self.desconecta_db()
-
+                self.maximizador()
         except:
-            messagebox.showerror(title="OperationalRecord", message="Usuário não encontrado!\nVerifique os seus dados")
+            messagebox.showerror(title="Station Manager", message="UsuÃ¡rio nÃ£o encontrado!\nVerifique os seus dados")
             self.desconecta_db()
-    """def minimizador(self):
-        self.posto_habilitado = posto_habilitado
-        while not self.posto_habilitado:
-            for j in gw.getAllTitles():
-                if j != "OperationalRecord":
-                    try:
-                        window = gw.getWindowsWithTitle(j)[0]
-                        if window.isMaximized:
-                            window.minimize()
-                    except IndexError:
-                        pass"""
-            #   sleep(1)
-
+    def verifica_engenharia(self):
+        self.senha_engenharia = self.senha_entry_engenharia.get()
+        if (self.senha_engenharia == ""):
+            messagebox.showwarning(title="Station Manager", message="Senha em branco")
+        elif (self.senha_engenharia != "00000000"):
+            messagebox.showerror(title="Station Manager", message="Senha incorreta")
+        elif (self.senha_engenharia == "00000000"):
+            self.frame_login.place_forget()
+            #self.frame_engenharia.place_forget()
+            self.tela_de_registro()
     def minimizador(self):
         self.posto_habilitado = posto_habilitado
         while not self.posto_habilitado:
             for j in gw.getAllTitles():
-                if j != "OperationalRecord":
+                if j != "Station Manager":
                     try:
                         windows = gw.getWindowsWithTitle(j)
                         if windows:
                             window = windows[0]
-                            if window.isMaximized:
+                            if window.isMaximized: #Se estiver maximizado (NÃ£o inclui programas nativos do windows)
+                                window.minimize()
+                            elif window.title == "brmafa":
+                                window.minimize()
+                            elif window.title == "HB-SCAPE Framework V4.4.67 - Workspace":
+                                window.minimize()
+                            elif window.title == "Site de comunicaÃ§Ã£o":
+                                window.minimize()
+                            elif window.title == "InÃ­cio":
+                                window.minimize()
+                            elif window.title == "Sem tÃ­tulo":
+                                window.minimize()
+                            elif window.title == "Webex":
                                 window.minimize()
                     except Exception as e:
                         pass
-    """def minimizador(self):
-        self.posto_habilitado = posto_habilitado
+    def maximizador(self):
 
-        while not self.posto_habilitado:
-            for janela in gw.getAllTitles():
-                if janela != "OperationalRecord": #and "Barra de Tarefas" not in janela:
-                    j = gw.getWindowsWithTitle(janela)[0]
-                    # Verifique se a janela não está minimizada antes de minimizá-la
-                    if not j.isMinimized:
-                        j.minimize()
-        sleep(1)"""
+        nome_janela = "Sem tÃ­tulo"
+        janelas = gw.getWindowsWithTitle(nome_janela)
+        if janelas:
+            janela = janelas[0]
+            if not janela.isMaximized:
+                janela.maximize()   
     def desconecta_usuario(self):
-                # Atualize o estado do usuário para desconectado
-        self.usuario_conectado = False
-
+                # Atualize o estado do usuÃ¡rio para desconectado
         self.posto_habilitado = False
-        messagebox.showinfo(title="OperationalRecord", message=f"Usuário de matrícula {self.matricula_login} desconectado!")
-
-        self.minimizador()
+        #Registrando Log de entrada
+        self.agora = datetime.datetime.now()
+        self.data_hora = self.agora.strftime("%H:%M â€“ %d/%m/%Y")
+        with open(log_file_name, 'a') as log_file:
+            log_file.write(f"MACHINE, {self.data_hora}: UsuÃ¡rio de matrÃ­cula {self.matricula_login} se desconectou do posto.\n")
+        #Finalizando Log
+        messagebox.showinfo(title="Station Manager", message=f"UsuÃ¡rio de matrÃ­cula {self.matricula_login} desconectado!")
+        minimizador_thread = threading.Thread(target=self.minimizador)
+        minimizador_thread.start()
+    def politica_de_privacidade(self):
+        self.politica = ctk.CTkInputDialog (text="Ao concordar com as polÃ­ticas de privacidade, vocÃª assume total responsabilidade por manter a confidencialidade de sua senha nÃ£o a compartilhando com outros funcionÃ¡rios. O registro de novos usuÃ¡rios Ã© feito uma vez que o operador foi treinado e, por tanto, estÃ¡ habilidado para atuar neste posto, cada registro de conta estÃ¡ vinculado a matrÃ­cula do funcionÃ¡rio para uso nÃ£o-compartilhado. Cada conta estÃ¡ vinculada ao posto em que foi registrada, favor usar a mesma senha em todos os postos.\nPara poresseguir digite 'Concordo'", title="Station Manager")
+        self.texto_politica = self.politica.get_input()
+        if (self.texto_politica == "Concordo"):
+            #Dar um jeito de acionar o botÃ£o da polÃ­tica. PENDENTE
+            pass
+    def station_manager_log(self):
+        if not os.path.isfile(log_file_name):
+            with open(log_file_name, 'w') as log_file:
+                log_file.write("Station Manager Log: ")
+        pass
 class App(ctk.CTk, BackEnd):
     def __init__(self):
         super().__init__()
         self.configuracoes_da_janela()
         self.tela_de_login()
         self.cria_tabela()
+        self.station_manager_log()
         minimizador_thread = threading.Thread(target=self.minimizador)
         minimizador_thread.start()
     def configuracoes_da_janela(self):
@@ -142,62 +169,96 @@ class App(ctk.CTk, BackEnd):
         #self.geometry("700x400")
         self.attributes("-fullscreen", True)
         #-alpha, -transparentcolor, -disabled, -fullscreen, -toolwindow, or -topmost
-        self.title("OperationalRecord")
+        self.title("Station Manager")
         self.resizable(True, True)
         ctk.set_appearance_mode("Dark")
     def tela_de_login(self):
-
-        #Criando aS FrameS
+        try:
+            self.frame_registro.place_forget()
+            print("Deu forget no tela de registro")
+        except:
+            print("NÃ£o deu pra dar forget no tela de registro")
+            pass
+                #Criando aS FrameS
         self.frame_centro = ctk.CTkLabel(self,text=None, width = 700, height=400, fg_color="#1e1e1e", corner_radius=8)
-        self.frame_centro.place(x=451, y=250) 
-        self.frame_login = ctk.CTkLabel(self,text=None, width = 330, height=380, fg_color="#323232", corner_radius=8)
-        self.frame_login.place(x=810, y=260)
-        #self.frame_login.place(x=360, y=10)
+        self.frame_centro.place(x=595, y=325) 
         #Trabalhando com as imagens
         img = Image.open("Team.png")
         img_resize = img.resize((380, 380))
         img_resize_tk = ImageTk.PhotoImage(img_resize)
         self.lb_img = ctk.CTkLabel(self.frame_centro, text=None, image=img_resize_tk)
         self.lb_img.place(x=0, y=10)
+        #Imagem Fontenele
+        imgf = Image.open("FonteneleBack.png")
+        imgf_resize = imgf.resize((300, 200))
+        imgf_resize_tk = ImageTk.PhotoImage(imgf_resize)
+        self.lb_imgf = ctk.CTkLabel(self, text=None, image=imgf_resize_tk)
+        self.lb_imgf.place(x=1660, y=920)
+        #Frame de Login
+        self.frame_login = ctk.CTkLabel(self.frame_centro,text=None, width = 330, height=380, fg_color="#323232", corner_radius=8)
+        self.frame_login.place(x=360, y=10)
         #Widgets da frame_login
-        self.lb_title_login = ctk.CTkLabel(self.frame_login, text="Faça login para habilitar o posto", font=("Century Gothic bold", 14))
+        self.lb_title_login = ctk.CTkLabel(self.frame_login, text="FaÃ§a login para habilitar o posto", font=("Century Gothic bold", 14))
         self.lb_title_login.place(x=65, y=20)
-        self.matricula_login_entry = ctk.CTkEntry(self.frame_login, width=300, placeholder_text="Matrícula", font=("Century Gothic bold", 16)) #, corner_radius=10
+        self.matricula_login_entry = ctk.CTkEntry(self.frame_login, width=300, placeholder_text="MatrÃ­cula", font=("Century Gothic bold", 16)) #, corner_radius=10
         self.matricula_login_entry.place(x=15, y=50)
         self.senha_login_entry = ctk.CTkEntry(self.frame_login, width=300, placeholder_text="Senha", font=("Century Gothic bold", 16), show="*")
         self.senha_login_entry.place(x=15, y=85)
-        self.save_mat_entry = ctk.CTkCheckBox(self.frame_login, text= "Memorizar matrícula", corner_radius=15)
+        self.save_mat_entry = ctk.CTkCheckBox(self.frame_login, text= "Memorizar matrÃ­cula", corner_radius=15)
         self.save_mat_entry.place(x=15, y=120) 
-        self.bt_iniciar = ctk.CTkButton(self.frame_login, text="INICIAR!", width=300, hover_color="#87bdfd", command=self.verifica_login)
-        self.bt_iniciar.place(x=15, y=170)
-        self.bt_iniciar = ctk.CTkButton(self.frame_login, text="DESCONECTAR", width=300,fg_color= "red", hover_color="#87bdfd", command=self.desconecta_usuario)
-        self.bt_iniciar.place(x=15, y=205)
-        self.lb_registro_login = ctk.CTkLabel(self.frame_login, text="Novo usuário:", font=("Century Gothic bold", 15))
-        self.lb_registro_login.place(x=15, y=240) 
-        self.bt_registro_login = ctk.CTkButton(self.frame_login, text="REGISTRAR", width=205, fg_color="green", hover_color="#090", command=self.tela_de_registro)
-        self.bt_registro_login.place(x=110, y=240)     
+        self.bt_iniciar = ctk.CTkButton(self.frame_login, text="INICIAR", width=300, fg_color="green", hover_color="#090", command=self.verifica_login)
+        self.bt_iniciar.place(x=15, y=165)
+        self.bt_desconectar = ctk.CTkButton(self.frame_login, text="DESCONECTAR", width=300,fg_color= "#b80000", hover_color="#cc0a0a", command=self.desconecta_usuario)
+        self.bt_desconectar.place(x=15, y=200)
+        """self.lb_registro_login = ctk.CTkLabel(self.frame_login, text="Novo usuÃ¡rio:", font=("Century Gothic bold", 15))
+        self.lb_registro_login.place(x=15, y=235) 
+        self.bt_registro_login = ctk.CTkButton(self.frame_login, text="REGISTRAR", width=205, hover_color="#337ecd", command=self.senha_engenharia)
+        self.bt_registro_login.place(x=110, y=235)""" 
+        self.frame_engenharia = ctk.CTkLabel(self.frame_login,text=None, width = 300, height=95, fg_color="#1e1e1e", corner_radius=8)
+        self.frame_engenharia.place(x=15, y=275)
+        #self.frame_engenharia.place(x=570, y=810)
+        #self.frame_engenharia.place(x=10, y=10)
+        self.lb_title_engenharia = ctk.CTkLabel(self.frame_engenharia, text="Cadastro de novo usuÃ¡rios", font=("Century Gothic bold", 14))
+        self.lb_title_engenharia.place(x=58, y=0) 
+        self.senha_entry_engenharia = ctk.CTkEntry(self.frame_engenharia, width=280, placeholder_text="Senha da engenharia", font=("Century Gothic bold", 16), show ="*") #, corner_radius=10
+        self.senha_entry_engenharia.place(x=10, y=23)
+        self.bt_engenharia = ctk.CTkButton(self.frame_engenharia, text="REGISTRAR", width=280, hover_color="#337ecd", command=self.verifica_engenharia)
+        self.bt_engenharia.place(x=10, y=55)       
+    def senha_engenharia(self):
+        """self.frame_engenharia = ctk.CTkLabel(self.frame_login,text=None, width = 300, height=95, fg_color="#1e1e1e", corner_radius=8)
+        self.frame_engenharia.place(x=15, y=275)
+        #self.frame_engenharia.place(x=570, y=810)
+        #self.frame_engenharia.place(x=10, y=10)
+        self.lb_title_engenharia = ctk.CTkLabel(self.frame_engenharia, text="Digite a senha da engenharia", font=("Century Gothic bold", 14))
+        self.lb_title_engenharia.place(x=50, y=0) 
+        self.senha_entry_engenharia = ctk.CTkEntry(self.frame_engenharia, width=280, placeholder_text="Senha", font=("Century Gothic bold", 16), show ="*") #, corner_radius=10
+        self.senha_entry_engenharia.place(x=10, y=23)
+        self.bt_engenharia = ctk.CTkButton(self.frame_engenharia, text="AVANÃ‡AR", width=280, hover_color="#337ecd", command=self.verifica_engenharia)
+        self.bt_engenharia.place(x=10, y=55)"""
+        pass
     def tela_de_registro(self):
+        #self.concorda_privacidade == False
         #Remover frame de login
         self.frame_login.place_forget()
         #Criar frame de registro
-        self.frame_registro = ctk.CTkLabel(self,text=None, width = 330, height=380, fg_color="#323232", corner_radius=8)
-        self.frame_registro.place(x=810, y=260)      
+        self.frame_registro = ctk.CTkLabel(self.frame_centro,text=None, width = 330, height=380, fg_color="#323232", corner_radius=8)
+        self.frame_registro.place(x=360, y=10)      
         #Widgets da tela de registro
-        self.lb_title_registro = ctk.CTkLabel(self.frame_registro, text="Registre um novo usuário", font=("Century Gothic bold", 14))
+        self.lb_title_registro = ctk.CTkLabel(self.frame_registro, text="Registre um novo usuÃ¡rio", font=("Century Gothic bold", 14))
         self.lb_title_registro.place(x=85, y=20)
         self.nome_registro_entry = ctk.CTkEntry(self.frame_registro, width=300, placeholder_text="Nome completo", font=("Century Gothic bold", 16)) #, corner_radius=10
         self.nome_registro_entry.place(x=15, y=50)
-        self.matricula_registro_entry = ctk.CTkEntry(self.frame_registro, width=300, placeholder_text="Nova matrícula", font=("Century Gothic bold", 16))
+        self.matricula_registro_entry = ctk.CTkEntry(self.frame_registro, width=300, placeholder_text="Sua matrÃ­cula", font=("Century Gothic bold", 16))
         self.matricula_registro_entry.place(x=15, y=85)
-        self.senha_registro_entry = ctk.CTkEntry(self.frame_registro, width=300, placeholder_text="Nova senha", font=("Century Gothic bold", 16), show="*")
+        self.senha_registro_entry = ctk.CTkEntry(self.frame_registro, width=300, placeholder_text="Sua senha", font=("Century Gothic bold", 16), show="*")
         self.senha_registro_entry.place(x=15, y=120)
         self.csenha_registro_entry = ctk.CTkEntry(self.frame_registro, width=300, placeholder_text="Confirmar senha", font=("Century Gothic bold", 16), show="*")
         self.csenha_registro_entry.place(x=15, y=155)
-        self.termo_registro = ctk.CTkCheckBox(self.frame_registro, text= "concordo com as políticas de sigilo", corner_radius=15)
-        self.termo_registro.place(x=50, y=190)
+        self.termo_registro = ctk.CTkCheckBox(self.frame_registro, text= "Concordo com as polÃ­ticas de privacidade", command=self.politica_de_privacidade, corner_radius=15)
+        self.termo_registro.place(x=30, y=190)
         self.bt_registro_registro = ctk.CTkButton(self.frame_registro, text="REGISTRAR", width=300, fg_color="green", hover_color="#090", command=self.cadastrar_usuario)
         self.bt_registro_registro.place(x=15, y=225) 
-        self.bt_voltar_registro = ctk.CTkButton(self.frame_registro, text="VOLTAR", width=300, hover_color="#87bdfd", command=self.tela_de_login)
+        self.bt_voltar_registro = ctk.CTkButton(self.frame_registro, text="VOLTAR", width=300, hover_color="#337ecd", command=self.tela_de_login)
         self.bt_voltar_registro.place(x=15, y=260)  
     def limpa_entry_cadastro(self):
         self.nome_registro_entry.delete(0, END)
@@ -206,10 +267,6 @@ class App(ctk.CTk, BackEnd):
         self.csenha_registro_entry.delete(0, END)  
     def limpa_entry_login(self):
         self.senha_login_entry.delete(0, END)
-
-if __name__=="__main__":
-    app = App()
-    app.mainloop()
 
 if __name__=="__main__":
     app = App()
