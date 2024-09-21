@@ -15,6 +15,7 @@ import datetime
 
 posto_habilitado = False
 log_file_name = "Station Manager Log"
+#teste
 
 class BackEnd():
     def conecta_db(self):
